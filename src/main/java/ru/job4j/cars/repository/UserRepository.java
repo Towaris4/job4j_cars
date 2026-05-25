@@ -3,109 +3,88 @@ package ru.job4j.cars.repository;
 import lombok.AllArgsConstructor;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.query.Query;
-import ru.job4j.cars.model.User;
+import ru.job4j.cars.model.AutoUser;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 @AllArgsConstructor
 public class UserRepository {
-    private final SessionFactory sf;
+    private final CrudRepository crudRepository;
 
-    public User create(User user) {
-        Session session = sf.openSession();
-        try {
-            session.beginTransaction();
-            session.save(user);
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            session.getTransaction().rollback();
-            throw new RuntimeException("Ошибка создания пользователя", e);
-        } finally {
-            session.close();
-        }
+    /**
+     * Сохранить в базе.
+     * @param user пользователь.
+     * @return пользователь с id.
+     */
+    public AutoUser create(AutoUser user) {
+        crudRepository.run(session -> session.persist(user));
         return user;
     }
 
-    public void update(User user) {
-        Session session = sf.openSession();
-        try {
-            session.beginTransaction();
-            session.createQuery(
-                            "UPDATE User SET login = :flogin, password = :fpassword WHERE id = :fId")
-                    .setParameter("flogin", user.getLogin())
-                    .setParameter("fpassword", user.getPassword())
-                    .setParameter("fId", user.getId())
-                    .executeUpdate();
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            session.getTransaction().rollback();
-            throw new RuntimeException("Ошибка обновления пользователя", e);
-        } finally {
-            session.close();
-        }
+    /**
+     * Обновить в базе пользователя.
+     * @param user пользователь.
+     */
+    public void update(AutoUser user) {
+        crudRepository.run(session -> session.merge(user));
     }
 
-    public void delete(Integer userId) {
-        Session session = sf.openSession();
-        try {
-            session.beginTransaction();
-            session.createQuery("DELETE FROM User WHERE id = :fId")
-                    .setParameter("fId", userId)
-                    .executeUpdate();
-            session.getTransaction().commit();
-        } catch (Exception e) {
-            session.getTransaction().rollback();
-            throw new RuntimeException("Ошибка удаления пользователя", e);
-        } finally {
-            session.close();
-        }
+    /**
+     * Удалить пользователя по id.
+     * @param userId ID
+     */
+    public void delete(int userId) {
+        crudRepository.run(
+                "DELETE FROM User WHERE id = :fId",
+                Map.of("fId", userId)
+        );
     }
 
-    public List<User> findAllOrderById() {
-        Session session = sf.openSession();
-        try {
-            return session.createQuery("FROM User ORDER BY id ASC", User.class)
-                    .getResultList();
-        } finally {
-            session.close();
-        }
+    /**
+     * Список пользователь отсортированных по id.
+     * @return список пользователей.
+     */
+    public List<AutoUser> findAllOrderById() {
+        return crudRepository.query("FROM User ORDER BY id ASC", AutoUser.class);
     }
 
-    public Optional<User> findById(Integer userId) {
-        Session session = sf.openSession();
-        try {
-            return Optional.ofNullable(session.createQuery(
-                            "FROM User AS i WHERE i.id = :fId", User.class)
-                    .setParameter("fId", userId)
-                    .uniqueResult());
-        } finally {
-            session.close();
-        }
+    /**
+     * Найти пользователя по ID
+     * @return пользователь.
+     */
+    public Optional<AutoUser> findById(int userId) {
+        return crudRepository.optional(
+                "FROM User WHERE id = :fId", AutoUser.class,
+                Map.of("fId", userId)
+        );
     }
 
-    public List<User> findByLikeLogin(String key) {
-        Session session = sf.openSession();
-        try {
-            return session.createQuery(
-                            "FROM User AS i WHERE i.login LIKE :fKey", User.class)
-                    .setParameter("fKey", "%" + key + "%")
-                    .getResultList();
-        } finally {
-            session.close();
-        }
+    /**
+     * Список пользователей по login LIKE %key%
+     * @param key key
+     * @return список пользователей.
+     */
+    public List<AutoUser> findByLikeLogin(String key) {
+        return crudRepository.query(
+                "FROM User WHERE login LIKE :fKey", AutoUser.class,
+                Map.of("fKey", "%" + key + "%")
+        );
     }
 
-    public Optional<User> findByLogin(String login) {
-        Session session = sf.openSession();
-        try {
-            return Optional.ofNullable(session.createQuery(
-                            "FROM User AS i WHERE i.login = :fLogin", User.class)
-                    .setParameter("fLogin", login)
-                    .uniqueResult());
-        } finally {
-            session.close();
-        }
+    /**
+     * Найти пользователя по login.
+     * @param login login.
+     * @return Optional or user.
+     */
+    public Optional<AutoUser> findByLogin(String login) {
+        return crudRepository.optional(
+                "FROM User WHERE login = :fLogin", AutoUser.class,
+                Map.of("fLogin", login)
+        );
     }
 }
