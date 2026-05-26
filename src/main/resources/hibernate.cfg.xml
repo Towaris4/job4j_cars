@@ -17,5 +17,6 @@
         <mapping class="ru.job4j.cars.model.Ads" />
         <mapping class="ru.job4j.cars.model.AutoPost" />
         <mapping class="ru.job4j.cars.model.PriceHistory" />
+        <mapping class="ru.job4j.cars.model.Participate" />
     </session-factory>
 </hibernate-configuration>
